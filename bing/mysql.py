@@ -4,13 +4,12 @@ import time
 from PIL import Image
 
 
-# 打开数据库连接（ip/数据库用户名/登录密码/数据库名）
-con_text = pymysql.connect(host="localhost", user="root", passwd="admin", db="bing",use_unicode = True,charset ="utf8")
-# 使用 cursor() 方法创建一个游标对象 cursor
+from config import keep_path
 
+con_text = pymysql.connect(host="localhost", user="root", passwd="admin", db="bing",use_unicode = True,charset ="utf8")
 cursor = con_text.cursor()
 
-rootDir = "F:\Image\Bing"
+rootDir = keep_path
 
 
 # 图片信息(Img)
