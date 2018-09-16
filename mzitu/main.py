@@ -2,15 +2,14 @@
 # Author By2048 Time 2017-1-18
 
 from bs4 import BeautifulSoup
-import requests
 
 try:
-    from .color_print import *
-    from .config import *
-    from .sql import *
-    from .downloads import *
-    from .tools import *
-    from .items import *
+    from mzitu.tool.color_print import *
+    from mzitu.config import *
+    from mzitu.tool.sql import *
+    from .download import *
+    from mzitu.tool.image import *
+    from .item import *
 except ImportError:
     from color_print import *
     from config import *
@@ -51,7 +50,7 @@ def get_categroy_date(soup):
 
 # 获取图片的其他信息
 def get_other_info(detail_link):
-    html=requests.get(detail_link,headers=headers)
+    html = requests.get(detail_link, headers=headers)
     soup = BeautifulSoup(html.text, "html.parser")
     max_num = get_image_num(soup)
     first_down_link = get_first_img_down_link(soup)
@@ -82,7 +81,7 @@ def get_down_link_list_by_str(first_down_link, max_num):
 
 # 获取 all_img_page 下所有的信息 title link
 def get_all_meizi():
-    html=requests.get(all_img_page_link,headers=headers)
+    html = requests.get(all_img_page_link, headers=headers)
     soup = BeautifulSoup(html.text, "html.parser")
 
     all_meizi = []
@@ -97,7 +96,7 @@ def get_all_meizi():
 
 # 获取主页的页数
 def get_page_max_num():
-    html=requests.get(start_page_link,headers=headers)
+    html = requests.get(start_page_link, headers=headers)
     soup = BeautifulSoup(html.text, "html.parser")
     all_link = soup.find('div', class_='nav-links').find_all('a')
     num = all_link[-2]['href'].split('/')[-2]
@@ -107,7 +106,7 @@ def get_page_max_num():
 # 获取开始页面每页中所有的图片的详细连接
 def get_meizi_link_in_start_page(page_num):
     page_link = 'http://www.mzitu.com/page/' + str(page_num)
-    html=requests.get(page_link,headers=headers)
+    html = requests.get(page_link, headers=headers)
     soup = BeautifulSoup(html.text, "html.parser")
     meizi_links = []
     for li in soup.find('ul', id='pins').find_all('li'):
@@ -149,9 +148,13 @@ def start_mzitu():
     print('End')
 
 
+def main():
+    pass
+
+
 if __name__ == '__main__':
     all_mz = get_all_meizi()
     for mz in all_mz:
-        print(mz.id,end='   ')
+        print(mz.id, end='   ')
         print(mz.title)
         insert_to_has_down(mz)

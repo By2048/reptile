@@ -1,9 +1,9 @@
-import sys
+import logging
 
-try:
-    from .mzitu.main import *
-except ImportError:
-    from mzitu.main import *
+from mzitu.main import main
+
+logging.basicConfig(level=logging.INFO)
 
 if __name__ == '__main__':
-    start_mzitu()
+    logging.info('--- start ---')
+    main()

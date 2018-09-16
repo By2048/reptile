@@ -1,15 +1,12 @@
-import os
 import time
 import datetime
 from PIL import Image as PILImage
 # import pyodbc
-import sys
-import re
 
 try:
-    from .config import *
-    from .items import *
-    from .sql import *
+    from mzitu.config import *
+    from mzitu.item import *
+    from mzitu.tool.sql import *
 except ImportError:
     from items import *
     from config import *
