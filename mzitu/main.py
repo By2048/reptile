@@ -1,106 +1,124 @@
-# Coding=utf-8
-# Author By2048 Time 2017-1-18
+# coding=utf-8
+import os
+import time
+import datetime
+import logging
 
+import requests
 from bs4 import BeautifulSoup
 
-try:
-    from mzitu.tool.color_print import *
-    from mzitu.config import *
-    from mzitu.tool.sql import *
-    from .download import *
-    from mzitu.tool.image import *
-    from .item import *
-except ImportError:
-    from color_print import *
-    from config import *
-    from sql import *
-    from downloads import *
-    from tools import *
-    from items import *
+from mzitu.config import images_link, headers
+from mzitu.tool.sql import get_downloads, insert_download, insert_error
+from mzitu.tool.download import download_images
+from mzitu.tool.image import change_name, get_folder_info
+from mzitu.tool.item import MImage, MFolder, Meizi
+from mzitu.tool.download import download_images
 
 
-# 获取一个页面的最大图片数量 方便合成连接
-def get_image_num(soup):
-    max_num = 0
-    for span in soup.find('div', class_='pagenavi').find_all('span'):
-        if (span.get_text() == '下一页»'):
-            max_num = span.parent.previous_sibling.find('span').get_text()
-    return int(max_num)
-
-
-# 获取第一张图片下载的连接
-def get_first_img_down_link(soup):
-    img_down_link = ''
-    try:
-        img = soup.find('div', class_='main-image').find('img')
-        img_down_link = img['src']
-    except:
-        print('Get_img_link_fail')
-    finally:
-        return img_down_link
-
-
-# 获取图片的 分类 日期
-def get_categroy_date(soup):
-    all_span = soup.find('div', class_='main-meta').find_all('span')
-    category = all_span[0].find('a').get_text()
-    date = all_span[1].get_text().replace('发布于 ', '')
-    return category, date
-
-
-# 获取图片的其他信息
 def get_other_info(detail_link):
-    html = requests.get(detail_link, headers=headers)
-    soup = BeautifulSoup(html.text, "html.parser")
-    max_num = get_image_num(soup)
-    first_down_link = get_first_img_down_link(soup)
-    category, date = get_categroy_date(soup)
-    return max_num, first_down_link, category, date
+    # 获取图片的其他信息
+    def get_image_num(soup):
+        """ 获取一个页面的最大图片数量 方便合成连接
+
+        :param soup:
+        :return:
+        """
+        max_num = 0
+        try:
+            for span in soup.find('div', class_='pagenavi').find_all('span'):
+                if (span.get_text() == '下一页»'):
+                    max_num = span.parent.previous_sibling.find('span').get_text()
+        except Exception as e:
+            logging.error('获取最大数量图片失败 ' + str(e))
+        finally:
+            return int(max_num)
+
+    def get_first_img_down_link(soup):
+        """ 获取第一张图片下载的连接
+
+        :param soup:
+        :return:
+        """
+        link = None
+        try:
+            link = soup.find('div', class_='main-image').find('img')['src']
+        except Exception as e:
+            logging.error('get img link fail ' + str(e))
+        finally:
+            return link
+
+    def get_categroy_date(soup):
+        """ 获取图片的 分类 日期
+
+        :param soup:
+        :return:
+        """
+        category, date = None, None
+        try:
+            spans = soup.find('div', class_='main-meta').find_all('span')
+            category = spans[0].find('a').get_text()
+            date = spans[1].get_text().replace('发布于 ', '')
+        except Exception as e:
+            logging.error('get category date fail ' + str(e))
+        finally:
+            return category, date
+
+    max_num, first_down_link, category, date = None, None, None, None
+    try:
+        html = requests.get(detail_link, headers=headers)
+        soup = BeautifulSoup(html.text, "html.parser")
+        max_num = get_image_num(soup)
+        first_down_link = get_first_img_down_link(soup)
+        category, date = get_categroy_date(soup)
+    except Exception as e:
+        print('获取图片其他信息失败' + str(e))
+    finally:
+        return max_num, first_down_link, category, date
 
 
 #  获取第一张图片的下载地址 根据下载地址合成其他下载连接
-def get_down_link_list_by_str(first_down_link, max_num):
+def get_download_links(download_link, max_num):
+    """ 通过字符串合成的方式获取下载链接              \n
+    http://i.meizitu.net/2017/10/29c02.jpg          \n
+    start_link   http://i.meizitu.net/2017/10       \n
+    image_name   29c02.jpg                          \n
+    _name        29c                                \n
+    _num         02                                 \n
+    _type        jpg                                \n
     """
-    http://i.meizitu.net/2017/10/29c02.jpg
-    start_link   http://i.meizitu.net/2017/10
-    image_name   29c02.jpg
-    _str    29c
-    _num    02
-    _type   jpg
-    """
-    start_link, image_name = os.path.split(first_down_link)
-    _str = image_name.split('.')[0][:-2]
+    start_link, image_name = os.path.split(download_link)
+
+    _name = image_name.split('.')[0][:-2]
     _num = int(image_name.split('.')[0][-2:])
     _type = image_name.split('.')[1]
 
-    down_link_list = []
+    downloads = []
     for num in range(_num, _num + max_num):
-        down_link_list.append(start_link + '/' + _str + str(num).zfill(2) + '.' + _type)
-    return down_link_list
+        downloads.append('{start_link}/{name}{num}.{type}'.
+                         format(start_link=start_link, name=_name, num=str(num).zfill(2), type=_type))
+    return downloads
 
 
-# 获取 all_img_page 下所有的信息 title link
 def get_all_meizi():
-    html = requests.get(all_img_page_link, headers=headers)
-    soup = BeautifulSoup(html.text, "html.parser")
+    """ 获取 http://www.mzitu.com/all/ 下数据
 
-    all_meizi = []
-    for ul in soup.find_all('ul', class_='archives'):
-        for link in ul.find_all('a'):
-            # 进行编码转换
-            # mz = Meizi(change_coding(link.get_text()), link['href'], '', '')
-            mz = Meizi(link['href'].split('/')[-1], link.get_text(), link['href'], '', '')
-            all_meizi.append(mz)
-    return all_meizi
-
-
-# 获取主页的页数
-def get_page_max_num():
-    html = requests.get(start_page_link, headers=headers)
-    soup = BeautifulSoup(html.text, "html.parser")
-    all_link = soup.find('div', class_='nav-links').find_all('a')
-    num = all_link[-2]['href'].split('/')[-2]
-    return int(num)
+    :return: [Meizi(_id, _title, _link, _category, _date)]
+    """
+    meizis = []
+    try:
+        html = requests.get(images_link, headers=headers)
+        soup = BeautifulSoup(html.text, "html.parser")
+        for ul in soup.find_all('ul', class_='archives'):
+            for link in ul.find_all('a'):
+                _id = link['href'].split('/')[-1]
+                _title = link.get_text()
+                _link = link['href']
+                _category, _date = '', ''
+                meizis.append(Meizi(_id, _title, _link, _category, _date))
+    except Exception as e:
+        logging.error('获取所有下载链接失败 ' + str(e))
+    finally:
+        return meizis
 
 
 # 获取开始页面每页中所有的图片的详细连接
@@ -111,15 +129,15 @@ def get_meizi_link_in_start_page(page_num):
     meizi_links = []
     for li in soup.find('ul', id='pins').find_all('li'):
         link = li.find('span').find('a')
-        tmp = Meizi(change_coding(link.get_text()), link['href'])
+        tmp = Meizi(change_name(link.get_text()), link['href'])
         meizi_links.append(tmp)
     return meizi_links
 
 
 # 主程序
-def start_mzitu():
+def main():
     print('\nStart')
-    has_down_list = get_all_has_down()
+    downloads = get_downloads()
     """
     # 使用主页下载图片
     max_page_num=get_max_page_num()
@@ -129,32 +147,22 @@ def start_mzitu():
     """
     all_meizi = get_all_meizi()
     for meizi in all_meizi:
-        if meizi.link not in has_down_list:
-            printGreen('meizi_index_title :  ' + meizi.title + '\n')
-            printGreen('meizi_index_link  :  ' + meizi.link + '\n')
+        if meizi.link not in downloads:
+            meizi.info()
             try:
                 max_num, first_down_link, category, date = get_other_info(meizi.link)
-                meizi.category = category
-                meizi.date = date
-                down_link_list = get_down_link_list_by_str(first_down_link, max_num)
-                printGreen('image_start_link  :  ' + down_link_list[0] + '\n')
-                printGreen('image_max_num     :  ' + str(max_num) + '\n')
-                down_image_list(down_link_list, meizi.id)
-                insert_to_has_down(meizi)
+                meizi.category, meizi.date = category, date
+                download_links = get_download_links(first_down_link, max_num)
+                logging.info('image_start_link  :  {0}\nimage_max_num     :  {1}'
+                             .format(download_links[0], str(max_num)))
+                download_images(download_links, meizi.title)
+                insert_download(meizi)
                 time.sleep(5)
             except:
-                insert_to_error_down(meizi)
+                insert_error(meizi)
             print()
-    print('End')
-
-
-def main():
-    pass
+    logging.info('---- end ----')
 
 
 if __name__ == '__main__':
-    all_mz = get_all_meizi()
-    for mz in all_mz:
-        print(mz.id, end='   ')
-        print(mz.title)
-        insert_to_has_down(mz)
+    pass

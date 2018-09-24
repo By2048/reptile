@@ -1,6 +1,8 @@
 import logging
 import datetime
 
+from mzitu.tool.format import get_zh_num
+
 logging.basicConfig(level=logging.INFO)
 
 
@@ -13,8 +15,8 @@ class Meizi:
         self.date = date
 
     def info(self):
-        logging.info('{0:<15}{1}'.format('title', self.title))
-        logging.info('{0:<15}{1}'.format('link', self.link))
+        zh_num = 60 - get_zh_num(self.title)
+        logging.info('title {0:<{1}} link {2:<50}'.format(self.title, zh_num, self.link))
 
     def all_info(self):
         logging.info('{0:<15}{1}'.format('id', self.id))
@@ -49,20 +51,21 @@ class MImage:
 
 
 class MFolder:
-    def __init__(self, name, path, date, num, size):
+    def __init__(self, folder_name: str, folder_path: str,
+                 create_date: datetime, image_num: int, total_size: float):
         """ 图片存储文件夹信息
 
-        :param name: 文件夹名
-        :param path: 绝对路径
-        :param date: 创建日期
-        :param num: 文件中图片数量
-        :param size: 文件夹大小
+        :param folder_name: 文件夹名
+        :param folder_path: 绝对路径
+        :param create_date: 创建日期
+        :param image_num: 文件中图片数量
+        :param total_size: 文件夹大小
         """
-        self.name = name
-        self.path = path
-        self.date = date
-        self.num = num
-        self.size = size
+        self.name = folder_name
+        self.path = folder_path
+        self.date = create_date
+        self.num = image_num
+        self.size = total_size
 
     def info(self):
         logging.info('{0:<10}{1}'.format('name', self.name))

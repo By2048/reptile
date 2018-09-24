@@ -16,7 +16,6 @@ def create_download_path(id: int) -> str:
     """ 创建下载路径
 
     :param id: 图片的 ID
-    :return: image_download_path
     """
 
     path = os.path.join(download_path, str(id))
@@ -24,7 +23,6 @@ def create_download_path(id: int) -> str:
         os.makedirs(path)
     else:
         logging.info('下载路径 {0} 已经存在'.format(path))
-    return path
 
 
 def _download_image(link: str, path: str):
@@ -71,7 +69,7 @@ def _download_images(links: list, path: str):
 
 
 # 使用reqursts下载图片
-def download_images(links: list, path: str):
+def download_images(links: list, name: str):
     def get_header(referer: str):
         """ 不添加请求头不能下载
 
@@ -89,18 +87,19 @@ def download_images(links: list, path: str):
                            'AppleWebKit/537.36 (KHTML, like Gecko) ' +
                            'Chrome/59.0.3071.115 Safari/537.36'),
             'Accept': 'image-test/webp,image-test/apng,image-test/*,*/*;q=0.8',
-            'Referer': '{}'.format(referer),
+            'Referer': '{0}'.format(referer),
         }
         return header
 
+    create_download_path(os.path.join(download_path, name))
     for link in links:
-        image_path = os.path.join(path, os.path.basename(link))
-        logging.info('下载图片组位置 {0}'.format(image_path))
+        image_keep_path = os.path.join(download_path, name, os.path.basename(link))
+        logging.info('下载图片组位置 {0}'.format(image_keep_path))
         try:
-            with open(path, "wb+") as file:
+            with open(image_keep_path, "wb+") as file:
                 file.write(requests.get(link, headers=get_header(link)).content)
         except Exception as e:
-            logging.error('下载图片组位置 {0} 错误 {1}'.format(image_path, str(e)))
+            logging.error('下载图片组出错，位置 {0} 错误 {1}'.format(image_keep_path, str(e)))
 
 
 if __name__ == '__main__':
