@@ -12,19 +12,6 @@ from mzitu.config import download_path, pool_num
 logging.basicConfig(level=logging.INFO)
 
 
-def create_download_path(id: int) -> str:
-    """ 创建下载路径
-
-    :param id: 图片的 ID
-    """
-
-    path = os.path.join(download_path, str(id))
-    if not os.path.exists(path):
-        os.makedirs(path)
-    else:
-        logging.info('下载路径 {0} 已经存在'.format(path))
-
-
 def _download_image(link: str, path: str):
     """ 下载图片
 
@@ -69,7 +56,34 @@ def _download_images(links: list, path: str):
 
 
 # 使用reqursts下载图片
-def download_images(links: list, name: str):
+def download_images(id: int, name: str, downloads: list):
+    def create_download_path(id: int) -> str:
+        """ 创建下载路径
+
+        :param id: 图片组的 ID
+        """
+
+        path = os.path.join(download_path, str(id))
+        if not os.path.exists(path):
+            os.makedirs(path)
+            return path
+        else:
+            logging.info('下载路径 {0} 已经存在'.format(path))
+
+    def rename_download_path(id: int, name: str) -> str:
+        """ 下载完成后将ID名下载路径转换为文件名
+
+        :param id: 图片组的ID
+        :param name: 图片组的文件名
+        """
+
+        try:
+            _old = os.path.join(download_path, str(id))
+            _new = os.path.join(download_path, name)
+            os.rename(_old, _new)
+        except Exception as e:
+            logging.info('重命名错误{}'.format(str(e)))
+
     def get_header(referer: str):
         """ 不添加请求头不能下载
 
@@ -91,15 +105,16 @@ def download_images(links: list, name: str):
         }
         return header
 
-    create_download_path(os.path.join(download_path, name))
-    for link in links:
-        image_keep_path = os.path.join(download_path, name, os.path.basename(link))
-        logging.info('下载图片组位置 {0}'.format(image_keep_path))
+    images_path = create_download_path(id)
+    logging.info('下载图片组位置 {0}'.format(images_path))
+    for download in downloads:
+        image_keep_path = os.path.join(images_path, os.path.basename(download))
         try:
             with open(image_keep_path, "wb+") as file:
-                file.write(requests.get(link, headers=get_header(link)).content)
+                file.write(requests.get(download, headers=get_header(download)).content)
         except Exception as e:
-            logging.error('下载图片组出错，位置 {0} 错误 {1}'.format(image_keep_path, str(e)))
+            logging.error('下载图片出错，图片下载位置 {} 错误 {}'.format(images_path, str(e)))
+    rename_download_path(id, name)
 
 
 if __name__ == '__main__':

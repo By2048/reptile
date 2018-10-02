@@ -7,23 +7,28 @@ logging.basicConfig(level=logging.INFO)
 
 
 class Meizi:
-    def __init__(self, id, title, link, category='none', date=datetime.datetime.now()):
+    def __init__(self, id, name, link, category=None, date=datetime.datetime.now(), downloads=[]):
         self.id = id
-        self.title = title
+        self.name = name
         self.link = link
         self.category = category
         self.date = date
+        self.downloads = downloads
 
-    def info(self):
-        zh_num = 60 - get_zh_num(self.title)
-        logging.info('title {0:<{1}} link {2:<50}'.format(self.title, zh_num, self.link))
+    def __str__(self):
+        zh_num = 60 - get_zh_num(self.name)
+        return '{0:<{1}} {2:<50}'.format(self.name, zh_num, self.link)
 
-    def all_info(self):
+    def print(self):
         logging.info('{0:<15}{1}'.format('id', self.id))
-        logging.info('{0:<15}{1}'.format('title', self.title))
+        logging.info('{0:<15}{1}'.format('title', self.name))
         logging.info('{0:<15}{1}'.format('link', self.link))
         logging.info('{0:<15}{1}'.format('category', self.category))
         logging.info('{0:<15}{1}'.format('date', self.date))
+        if self.downloads:
+            logging.info('{0:<15}{1}'.format('download[0]', self.downloads[0]))
+        else:
+            logging.info('{0:<15}{1}'.format('downloads', 'None'))
 
 
 class MImage:
@@ -38,7 +43,7 @@ class MImage:
         self.create_date = create_date
         self.change_date = change_date
 
-    def info(self):
+    def print(self):
         logging.info('{0:<15}{1}'.format('name', self.name))
         logging.info('{0:<15}{1}'.format('path', self.path))
         logging.info('{0:<15}{1}'.format('type', self.type))
@@ -67,7 +72,7 @@ class MFolder:
         self.num = image_num
         self.size = total_size
 
-    def info(self):
+    def print(self):
         logging.info('{0:<10}{1}'.format('name', self.name))
         logging.info('{0:<10}{1}'.format('path', self.path))
         logging.info('{0:<10}{1}'.format('date', self.date))

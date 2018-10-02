@@ -2,32 +2,42 @@
 import sqlite3
 import logging
 
-logging.basicConfig(level=logging.INFO)
-
 from mzitu.config import sqlite_connect, sqlite_cursor
+from mzitu.tool.item import Meizi, MFolder, MImage
+from mzitu.config import download_sql_path, download_txt_path
+
+logging.basicConfig(level=logging.INFO)
 
 
 def init_sql():
+    connect = sqlite3.connect(download_sql_path)
+    cursor = connect.cursor()
     create_download = """create table download
     (
         id         integer  not null,
         link       text     not null,
-        title      text     not null,
+        name       text     not null,
         category   text     not null,
-        date       date     not null
+        date       date     not null,
+        downloads  text     not null
     );"""
     create_error = """create table error
     (
         id         integer  primary key,
         link       text     not null,
-        title      text     not null
+        name       text     not null
     );"""
     try:
-        sqlite_connect.execute(create_download)
-        sqlite_cursor.execute(create_error)
-        sqlite_connect.commit()
-    except sqlite3.OperationalError:
-        logging.info('数据库已经存在')
+        cursor.execute(create_download)
+        cursor.execute(create_error)
+        connect.commit()
+    except Exception as e:
+        logging.info('数据库初始化失败{}'.format(str(e)))
+    finally:
+        connect.close()
+
+    with open(download_txt_path, 'w') as file:
+        file.close()
 
 
 def clear_sql(table='all'):
@@ -44,22 +54,29 @@ def clear_sql(table='all'):
         logging.error('清除数据库失败 ' + str(e))
 
 
-def insert_download(meizi):
+def insert_download(meizi: Meizi):
     try:
-        sqlite_cursor.execute("insert into download (id,link,title,category,date) "
-                              "values ('{0}','{1}','{2}','{3}','{4}')"
-                              .format(meizi.id, meizi.link, meizi.title, meizi.category, meizi.date))
-
+        insert = "insert into download (id,link,name,category,date,downloads) "
+        fmt = "values ('{0}','{1}','{2}','{3}','{4}','{5}')"
+        param = [meizi.id, meizi.link, meizi.name, meizi.category, meizi.date, ','.join(meizi.downloads)]
+        sqlite_cursor.execute(insert + fmt.format(*param))
         sqlite_connect.commit()
     except Exception as e:
         logging.error('插入数据库失败 ' + str(e))
 
-
-def insert_error(meizi):
     try:
-        sqlite_cursor.execute("insert into error (link,title) "
-                              "values ('{0}','{1}')"
-                              .format(meizi.link, meizi.title))
+        with open(download_txt_path, 'a', encoding='utf-8') as file:
+            file.write(str(meizi).strip() + '\n')
+    except Exception as e:
+        logging.error('写入文件失败 ' + str(e))
+
+
+def insert_error(meizi: Meizi):
+    try:
+        insert = "insert into error (link,name) "
+        fmt = "values ('{0}','{1}')"
+        param = [meizi.link, meizi.name]
+        sqlite_cursor.execute(insert + fmt.format(*param))
         sqlite_connect.commit()
     except Exception as e:
         logging.error('插入数据库失败 ' + str(e))
