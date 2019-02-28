@@ -58,7 +58,7 @@ def get_downloads():
     downloads = []
     try:
         for item in db.mzitu.find({}):
-            downloads.append(item[id])
+            downloads.append(item['id'])
     except Exception as e:
         logging.exception(e)
     return downloads

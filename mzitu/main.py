@@ -127,22 +127,22 @@ def get_all_meizi():
 # 主程序
 def main():
     already_downloads = get_downloads()
+    meizis = get_all_meizi()[:99]
 
-    meizis = get_all_meizi()
     for meizi in meizis:
         if meizi.id in already_downloads:
             continue
         try:
-            logging.info(f'\ntitle                :  {meizi.title}')
+            logging.info(f'title                :  {meizi.title}')
             meizi = get_meizi_other_info(meizi)
             download_meizi(meizi)
             insert_download(meizi)
-
+            logging.info('')
         except Exception as e:
             logging.error(f'处理失败{meizi}')
             insert_download(meizi, status=False)
         finally:
-            time.sleep(9)
+            time.sleep(16)
 
 
 def test():

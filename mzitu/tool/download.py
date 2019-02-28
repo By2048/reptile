@@ -2,6 +2,7 @@ import os
 import sys
 import urllib
 import logging
+import shutil
 import urllib.request
 import multiprocessing
 
@@ -67,6 +68,13 @@ def download_meizi(meizi: Meizi):
             return path
         else:
             logging.info('下载路径 {0} 已经存在'.format(path))
+
+    def delete_download_path(id: int):
+        path = os.path.join(download_path, str(id))
+        try:
+            shutil.rmtree(path)
+        except Exception as e:
+            logging.exception(e)
 
     def rename_download_path(id: int, title: str):
         """ 下载完成后将ID名下载路径转换为文件名
