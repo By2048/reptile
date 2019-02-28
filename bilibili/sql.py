@@ -1,7 +1,7 @@
 import pymysql
 
 try:
-    from config import *
+    from conf import *
     from tool import *
 except ImportError:
     from .config import *

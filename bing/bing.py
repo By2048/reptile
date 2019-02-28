@@ -5,7 +5,7 @@ import sys
 import os
 import shutil
 
-from config import keep_path, temp_path
+from conf import keep_path, temp_path
 
 
 class BImage:

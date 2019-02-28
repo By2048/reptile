@@ -7,7 +7,10 @@ import multiprocessing
 
 import requests
 
-from mzitu.config import download_path, pool_num
+from mzitu.config import download_path
+from mzitu.tool.model import Meizi
+
+pool_num = 4
 
 logging.basicConfig(level=logging.INFO)
 
@@ -56,13 +59,8 @@ def _download_images(links: list, path: str):
 
 
 # 使用reqursts下载图片
-def download_images(id: int, name: str, downloads: list):
+def download_meizi(meizi: Meizi):
     def create_download_path(id: int) -> str:
-        """ 创建下载路径
-
-        :param id: 图片组的 ID
-        """
-
         path = os.path.join(download_path, str(id))
         if not os.path.exists(path):
             os.makedirs(path)
@@ -70,26 +68,22 @@ def download_images(id: int, name: str, downloads: list):
         else:
             logging.info('下载路径 {0} 已经存在'.format(path))
 
-    def rename_download_path(id: int, name: str) -> str:
+    def rename_download_path(id: int, title: str):
         """ 下载完成后将ID名下载路径转换为文件名
 
         :param id: 图片组的ID
-        :param name: 图片组的文件名
+        :param title: 图片组的文件名
         """
 
         try:
             _old = os.path.join(download_path, str(id))
-            _new = os.path.join(download_path, name)
+            _new = os.path.join(download_path, title)
             os.rename(_old, _new)
         except Exception as e:
-            logging.info('重命名错误{}'.format(str(e)))
+            logging.info('重命名错误')
+            logging.exception(e)
 
-    def get_header(referer: str):
-        """ 不添加请求头不能下载
-
-        :param referer: 图片下载链接
-        :return: header: 请求头
-        """
+    def get_header(download_link: str):
         header = {
             'Host': 'i.meizitu.net',
             'Pragma': 'no-cache',
@@ -97,24 +91,26 @@ def download_images(id: int, name: str, downloads: list):
             'Accept-Language': 'zh-CN,zh;q=0.8,en;q=0.6',
             'Cache-Control': 'no-cache',
             'Connection': 'keep-alive',
-            'User-Agent': ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) ' +
-                           'AppleWebKit/537.36 (KHTML, like Gecko) ' +
+            'User-Agent': ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5)'
+                           'AppleWebKit/537.36 (KHTML, like Gecko)'
                            'Chrome/59.0.3071.115 Safari/537.36'),
             'Accept': 'image-test/webp,image-test/apng,image-test/*,*/*;q=0.8',
-            'Referer': '{0}'.format(referer),
+            'Referer': '{0}'.format(download_link),
         }
         return header
 
-    images_path = create_download_path(id)
-    logging.info('下载图片组位置 {0}'.format(images_path))
-    for download in downloads:
+    images_path = create_download_path(meizi.id)
+    for download in meizi.downloads:
         image_keep_path = os.path.join(images_path, os.path.basename(download))
         try:
             with open(image_keep_path, "wb+") as file:
-                file.write(requests.get(download, headers=get_header(download)).content)
+                response = requests.get(download, headers=get_header(download))
+                file.write(response.content)
         except Exception as e:
-            logging.error('下载图片出错，图片下载位置 {} 错误 {}'.format(images_path, str(e)))
-    rename_download_path(id, name)
+            logging.error(f'下载图片出错，图片下载位置 {images_path}')
+            logging.exception(e)
+
+    rename_download_path(meizi.id, meizi.title)
 
 
 if __name__ == '__main__':

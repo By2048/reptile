@@ -4,7 +4,7 @@ import time
 from PIL import Image
 
 
-from config import keep_path
+from conf import keep_path
 
 con_text = pymysql.connect(host="localhost", user="root", passwd="admin", db="bing",use_unicode = True,charset ="utf8")
 cursor = con_text.cursor()

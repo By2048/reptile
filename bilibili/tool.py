@@ -12,7 +12,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 # from selenium.webdriver.support import expected_conditions as EC
 
 try:
-    from config import *
+    from conf import *
 except:
     from .config import *
 
