@@ -11,7 +11,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 try:
-    from config import *
+    from conf import *
     from download import *
     from sql import *
     from tool import *

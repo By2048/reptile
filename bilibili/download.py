@@ -5,7 +5,7 @@ import time
 import sys
 
 try:
-    from config import *
+    from conf import *
 except ImportError:
     from .config import *
 

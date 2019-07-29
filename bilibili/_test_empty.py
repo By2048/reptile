@@ -16,7 +16,7 @@ try:
     from .config import *
 except ImportError:
     from tool import *
-    from config import *
+    from conf import *
     from main import *
 
 
